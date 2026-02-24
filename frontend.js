@@ -74,10 +74,34 @@ app.post("/api/change-pin", express.json(), async (req, res) => {
 
 app.get("/api/logs", async (req, res) => {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/logs`);
+    const { startDate, endDate, limit } = req.query;
+    let url = `${BACKEND_URL}/api/logs?`;
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
+    if (limit) url += `limit=${limit}&`;
+    
+    const response = await axios.get(url);
     res.json(response.data);
   } catch (error) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: "Fetch logs failed" });
+  }
+});
+
+app.delete("/api/logs", async (req, res) => {
+  try {
+    const response = await axios.delete(`${BACKEND_URL}/api/logs`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: "Delete all logs failed" });
+  }
+});
+
+app.delete("/api/logs/:id", async (req, res) => {
+  try {
+    const response = await axios.delete(`${BACKEND_URL}/api/logs/${req.params.id}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: "Delete log failed" });
   }
 });
 

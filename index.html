@@ -529,9 +529,72 @@
         .action-buy { color: #00ff00; font-weight: bold; }
         .action-sell { color: #ff4d4d; font-weight: bold; }
 
+        .logs-controls {
+            padding: 15px 20px;
+            background: var(--bg-input);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .filter-group input {
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 12px;
+            outline: none;
+        }
+
+        .delete-all-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .delete-row-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .delete-row-btn:hover {
+            opacity: 1;
+        }
+
         @media (max-width: 768px) {
             th, td { padding: 10px 8px; font-size: 11px; }
             .logs-btn-top { right: 15px; top: 75px; } /* Move on mobile to avoid overlap */
+            .logs-controls { flex-direction: column; align-items: stretch; }
+            .delete-all-btn { margin-left: 0; }
         }
     </style>
 </head>
@@ -590,6 +653,19 @@
                 <h2>📊 Trading Logs</h2>
                 <div class="close-logs" onclick="closeLogsModal()">✕</div>
             </div>
+            <div class="logs-controls">
+                <div class="filter-group">
+                    <label>From:</label>
+                    <input type="date" id="log-start-date" onchange="fetchLogs()">
+                </div>
+                <div class="filter-group">
+                    <label>To:</label>
+                    <input type="date" id="log-end-date" onchange="fetchLogs()">
+                </div>
+                <button class="delete-all-btn" onclick="deleteAllLogs()">
+                    🗑️ Delete All
+                </button>
+            </div>
             <div class="logs-table-wrapper">
                 <table id="logs-table">
                     <thead>
@@ -599,8 +675,10 @@
                             <th>Action</th>
                             <th>Qty</th>
                             <th>Price</th>
+                            <th>Order ID</th>
                             <th>Status</th>
                             <th>Reason</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="logs-body">
@@ -729,15 +807,22 @@
 
         async function fetchLogs() {
             const body = document.getElementById('logs-body');
-            body.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading logs...</td></tr>';
+            const startDate = document.getElementById('log-start-date').value;
+            const endDate = document.getElementById('log-end-date').value;
+            
+            body.innerHTML = '<tr><td colspan="9" style="text-align:center;">Loading logs...</td></tr>';
             
             try {
-                const response = await fetch('/api/logs');
+                let url = '/api/logs?limit=20';
+                if (startDate) url += `&startDate=${startDate}`;
+                if (endDate) url += `&endDate=${endDate}`;
+                
+                const response = await fetch(url);
                 const logs = await response.json();
                 
                 body.innerHTML = '';
                 if (logs.length === 0) {
-                    body.innerHTML = '<tr><td colspan="7" style="text-align:center;">No logs found.</td></tr>';
+                    body.innerHTML = '<tr><td colspan="9" style="text-align:center;">No logs found.</td></tr>';
                     return;
                 }
 
@@ -757,15 +842,37 @@
                         <td class="action-${log.action.toLowerCase()}">${log.action}</td>
                         <td>${log.quantity}</td>
                         <td>${log.price || '0.00'}</td>
+                        <td style="font-family:monospace; font-size:11px; color:var(--text-dim);">${log.order_id || '-'}</td>
                         <td><span class="status-badge status-${log.status.toLowerCase()}">${log.status}</span></td>
                         <td style="font-size:11px; color:var(--text-dim);">${log.reason || '-'}</td>
+                        <td>
+                            <button class="delete-row-btn" onclick="deleteLog('${log.id}')" title="Delete Log">🗑️</button>
+                        </td>
                     `;
                     body.appendChild(row);
                 });
             } catch (err) {
                 console.error('Fetch logs error:', err);
-                body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger);">Error loading logs.</td></tr>';
+                body.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--danger);">Error loading logs.</td></tr>';
             }
+        }
+
+        async function deleteLog(id) {
+            if (!confirm('Delete this log entry?')) return;
+            try {
+                const response = await fetch(`/api/logs/${id}`, { method: 'DELETE' });
+                if (response.ok) fetchLogs();
+                else alert('Failed to delete log');
+            } catch (err) { console.error('Delete log error:', err); }
+        }
+
+        async function deleteAllLogs() {
+            if (!confirm('Are you sure you want to delete ALL logs? This cannot be undone.')) return;
+            try {
+                const response = await fetch('/api/logs', { method: 'DELETE' });
+                if (response.ok) fetchLogs();
+                else alert('Failed to delete all logs');
+            } catch (err) { console.error('Delete all logs error:', err); }
         }
 
         async function submitChangePin() {
