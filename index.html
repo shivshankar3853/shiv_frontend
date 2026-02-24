@@ -676,6 +676,7 @@
                             <th>Qty</th>
                             <th>Price</th>
                             <th>Order ID</th>
+                            <th>Product</th>
                             <th>Status</th>
                             <th>Reason</th>
                             <th>Action</th>
@@ -841,6 +842,7 @@
                         <td style="font-weight:bold;">${log.symbol.split(':')[1] || log.symbol}</td>
                         <td class="action-${log.action.toLowerCase()}">${log.action}</td>
                         <td>${log.quantity}</td>
+                        <td style="font-weight:bold; color:var(--text-dim);">${log.product || '-'}</td>
                         <td>${log.price || '0.00'}</td>
                         <td style="font-family:monospace; font-size:11px; color:var(--text-dim);">${log.order_id || '-'}</td>
                         <td><span class="status-badge status-${log.status.toLowerCase()}">${log.status}</span></td>
@@ -1069,8 +1071,9 @@
                 "token": WEBHOOK_SECRET,
                 "symbol": `${inst.exchange}:${inst.trading_symbol}`,
                 "action": "BUY",
+                "product": "D",
                 "quantity": 1,
-                "price": "{{close}}"
+                "price": "{{market}}"
             };
 
             const output = document.getElementById('json-output');
