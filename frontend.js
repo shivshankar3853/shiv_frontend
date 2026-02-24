@@ -72,6 +72,15 @@ app.post("/api/change-pin", express.json(), async (req, res) => {
   }
 });
 
+app.get("/api/logs", async (req, res) => {
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/logs`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: "Fetch logs failed" });
+  }
+});
+
 app.get("/get-token", (req, res) => {
   if (accessToken) {
     res.json({ authenticated: true });
