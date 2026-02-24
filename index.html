@@ -61,7 +61,7 @@
         .theme-toggle {
             position: fixed;
             top: 15px;
-            right: 15px;
+            right: 70px; /* Positioned to the left of FR icon */
             background: var(--bg-card);
             border: 1px solid var(--border);
             width: 45px;
@@ -79,10 +79,33 @@
 
         .theme-toggle:active { transform: scale(0.9); }
 
+        .frontend-restart-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px; /* Rightmost icon */
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px var(--shadow);
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            color: var(--primary);
+        }
+
+        .frontend-restart-btn:active { transform: scale(0.9); }
+
         .logout-btn-top {
             position: fixed;
             top: 15px;
-            right: 70px; /* Positioned to the left of theme toggle */
+            right: 125px; /* Positioned to the left of theme toggle */
             background: var(--bg-card);
             border: 1px solid var(--border);
             width: 45px;
@@ -419,8 +442,9 @@
         </div>
     </div>
 
-    <div class="theme-toggle" id="theme-toggle" title="Toggle Theme">☀️</div>
     <div class="logout-btn-top" id="logout-btn" onclick="logout()" title="Logout">🚪</div>
+    <div class="theme-toggle" id="theme-toggle" title="Toggle Theme">☀️</div>
+    <div class="frontend-restart-btn" id="frontend-restart-btn" onclick="restartFrontendService()" title="Restart Frontend">FR</div>
 
     <div class="header">
         <button class="login-btn" onclick="redirectToLogin()">🔐 Login Upstox</button>
@@ -642,6 +666,18 @@
                 });
                 if (response.ok) alert('✅ Service restart initiated.');
                 else alert('❌ Failed to restart');
+            } catch (err) { alert('❌ Error: ' + err.message); }
+        }
+
+        async function restartFrontendService() {
+            if (!confirm('Restart the frontend service?')) return;
+            try {
+                const response = await fetch(`${BACKEND_URL}/service/restart-frontend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) alert('✅ Frontend Service restart initiated.');
+                else alert('❌ Failed to restart frontend');
             } catch (err) { alert('❌ Error: ' + err.message); }
         }
 

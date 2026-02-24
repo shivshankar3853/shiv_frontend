@@ -33,6 +33,13 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request)) // Try network first, then cache
+    fetch(event.request).catch(async () => {
+      const cachedResponse = await caches.match(event.request);
+      if (cachedResponse) return cachedResponse;
+      return new Response('Network error occurred', {
+        status: 408,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    })
   );
 });
