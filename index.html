@@ -250,6 +250,59 @@
         .results-list li .name { font-size: 12px; color: var(--text-dim); }
         .results-list li .details { font-size: 11px; color: var(--text-details); display: block; margin-top: 4px; }
 
+        .payload-form {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-input);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .payload-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .payload-form label {
+            font-size: 11px;
+            color: var(--text-details);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .payload-form select, .payload-form input {
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .payload-form select:focus, .payload-form input:focus {
+            border-color: var(--primary);
+        }
+
+        .show-btn {
+            grid-column: span 2;
+            background: var(--primary);
+            color: var(--bg-card);
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: transform 0.2s;
+        }
+
+        .show-btn:active { transform: scale(0.98); }
+
         .json-output {
             margin-top: 15px;
             padding: 15px;
@@ -698,11 +751,46 @@
 
     <div class="search-container">
         <h3>🔍 Asset Search</h3>
+        
         <div class="search-box">
             <input type="text" id="search-input" placeholder="RELIANCE, NIFTY..." oninput="searchInstruments()">
             <button class="reset-btn-inline" onclick="resetSearch()" title="Reset Search">🔄</button>
         </div>
         <ul id="results-list" class="results-list hidden"></ul>
+
+        <div id="payload-config" class="hidden">
+            <div class="payload-form">
+                <div class="form-group">
+                    <label>Action</label>
+                    <select id="payload-action">
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Product</label>
+                    <select id="payload-product">
+                        <option value="D">Delivery (D)</option>
+                        <option value="I">Intraday (I)</option>
+                        <option value="CO">Cover Order (CO)</option>
+                        <option value="OCO">Bracket Order (OCO)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="payload-quantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <select id="payload-price">
+                        <option value="{{market}}">Market</option>
+                        <option value="{{close}}">Close</option>
+                        <option value="{{open}}">Open</option>
+                    </select>
+                </div>
+                <button class="show-btn" onclick="generateJSON()">Show JSON Payload</button>
+            </div>
+        </div>
 
         <div id="json-container" class="hidden">
             <h4 style="margin-bottom: 10px; color: var(--text-dim); font-size: 14px;">📋 Trading View Message</h4>
@@ -1018,11 +1106,14 @@
         }
 
         let searchTimeout;
+        let selectedInstrument = null;
 
         function resetSearch() {
             document.getElementById('search-input').value = '';
             document.getElementById('results-list').classList.add('hidden');
+            document.getElementById('payload-config').classList.add('hidden');
             document.getElementById('json-container').classList.add('hidden');
+            selectedInstrument = null;
         }
 
         async function searchInstruments() {
@@ -1066,19 +1157,41 @@
         function selectInstrument(inst) {
             document.getElementById('search-input').value = inst.trading_symbol;
             document.getElementById('results-list').classList.add('hidden');
+            document.getElementById('payload-config').classList.remove('hidden');
+            document.getElementById('json-container').classList.add('hidden');
             
+            selectedInstrument = inst;
+            
+            // Scroll to config form
+            document.getElementById('payload-config').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateJSON() {
+            if (!selectedInstrument) {
+                alert('Please search and select an instrument first.');
+                return;
+            }
+
+            const action = document.getElementById('payload-action').value;
+            const product = document.getElementById('payload-product').value;
+            const quantity = parseInt(document.getElementById('payload-quantity').value) || 1;
+            const price = document.getElementById('payload-price').value;
+
             const json = {
                 "token": WEBHOOK_SECRET,
-                "symbol": `${inst.exchange}:${inst.trading_symbol}`,
-                "action": "BUY",
-                "product": "D",
-                "quantity": 1,
-                "price": "{{market}}"
+                "symbol": `${selectedInstrument.exchange}:${selectedInstrument.trading_symbol}`,
+                "action": action,
+                "product": product,
+                "quantity": quantity,
+                "price": price
             };
 
             const output = document.getElementById('json-output');
             output.innerHTML = `<button class="copy-btn" onclick="copyToClipboard()">Copy</button>` + JSON.stringify(json, null, 4);
             document.getElementById('json-container').classList.remove('hidden');
+            
+            // Scroll to JSON output
+            document.getElementById('json-container').scrollIntoView({ behavior: 'smooth' });
         }
 
         function copyToClipboard() {
