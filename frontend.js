@@ -10,14 +10,32 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const BACKEND_URL = process.env.BACKEND_URL;
+if (!BACKEND_URL) {
+  console.error("❌ ERROR: BACKEND_URL is missing in frontend/.env!");
+}
+
+app.get("/api/sync-instruments", async (req, res) => {
+  console.log("🔄 Proxying sync instruments request to:", BACKEND_URL);
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/sync-instruments`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: "Sync failed" });
+  }
+});
+
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.BACKEND_URL || "https://shiv-websocket.onrender.com";
 
 let accessToken = null;
 
 app.get("/favicon.ico", (req, res) => res.status(204).end());
+
+app.get("/api/config", (req, res) => {
+  res.json({ BACKEND_URL });
+});
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));

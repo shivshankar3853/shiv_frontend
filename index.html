@@ -58,93 +58,65 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        .theme-toggle {
+        .top-nav {
             position: fixed;
-            top: 15px;
-            right: 70px; /* Positioned to the left of FR icon */
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            padding: 0 15px;
             display: flex;
+            justify-content: flex-end;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 10px var(--shadow);
+            gap: 10px;
             z-index: 1000;
-            font-size: 20px;
-            transition: transform 0.2s;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            box-sizing: border-box;
         }
 
-        .theme-toggle:active { transform: scale(0.9); }
-
-        .frontend-restart-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px; /* Rightmost icon */
+        .nav-icon {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 10px var(--shadow);
-            z-index: 1000;
+            transition: transform 0.2s, background 0.2s;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .nav-icon:active { transform: scale(0.9); }
+        .nav-icon:hover { background: var(--secondary); }
+
+        .theme-toggle {
+            font-size: 20px;
+        }
+
+        .frontend-restart-btn {
             font-size: 14px;
             font-weight: bold;
-            transition: transform 0.2s;
             color: var(--primary);
         }
 
-        .frontend-restart-btn:active { transform: scale(0.9); }
-
         .logout-btn-top {
-            position: fixed;
-            top: 15px;
-            right: 125px; /* Positioned to the left of theme toggle */
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 10px var(--shadow);
-            z-index: 1000;
-            font-size: 20px;
-            transition: transform 0.2s;
             color: var(--danger);
         }
 
-        .logout-btn-top:active { transform: scale(0.9); }
-
         .logs-btn-top {
-            position: fixed;
-            top: 15px;
-            right: 180px; /* Positioned to the left of logout btn */
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 10px var(--shadow);
-            z-index: 1000;
-            font-size: 20px;
-            transition: transform 0.2s;
             color: var(--primary);
         }
 
-        .logs-btn-top:active { transform: scale(0.9); }
+        .sync-btn-top {
+            color: var(--primary);
+        }
 
         .header {
             display: flex;
@@ -154,7 +126,26 @@
             width: 100%;
             max-width: 600px;
             justify-content: center;
-            margin-top: 50px;
+            margin-top: 80px;
+        }
+
+        @media (max-width: 480px) {
+            .top-nav {
+                height: 55px;
+                padding: 0 10px;
+                gap: 8px;
+            }
+            .nav-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            .top-nav > div:first-child {
+                font-size: 14px;
+            }
+            .header {
+                margin-top: 70px;
+            }
         }
 
         .login-btn {
@@ -694,10 +685,14 @@
         </div>
     </div>
 
-    <div class="logout-btn-top" id="logout-btn" onclick="logout()" title="Logout">🚪</div>
-    <div class="logs-btn-top" id="logs-btn" onclick="openLogsModal()" title="View Logs">📊</div>
-    <div class="theme-toggle" id="theme-toggle" title="Toggle Theme">☀️</div>
-    <div class="frontend-restart-btn" id="frontend-restart-btn" onclick="restartFrontendService()" title="Restart Frontend">FR</div>
+    <div class="top-nav">
+        <div style="flex: 1; font-weight: bold; font-size: 16px; color: var(--primary);">Trading App</div>
+        <div class="nav-icon sync-btn-top" id="sync-btn" onclick="syncInstruments()" title="Sync Instruments">🔄</div>
+        <div class="nav-icon logs-btn-top" id="logs-btn" onclick="openLogsModal()" title="View Logs">📊</div>
+        <div class="nav-icon theme-toggle" id="theme-toggle" title="Toggle Theme">☀️</div>
+        <div class="nav-icon frontend-restart-btn" id="frontend-restart-btn" onclick="restartFrontendService()" title="Restart Frontend">FR</div>
+        <div class="nav-icon logout-btn-top" id="logout-btn" onclick="logout()" title="Logout">🚪</div>
+    </div>
 
     <!-- Logs Modal -->
     <div id="logs-modal" class="hidden">
@@ -805,13 +800,6 @@
         const pinModal = document.getElementById('pin-modal');
         const changePinModal = document.getElementById('change-pin-modal');
         const pinError = document.getElementById('pin-error');
-
-        // Auto-focus first input on load
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                pinInputs[0].focus();
-            }, 100);
-        });
 
         function handlePinInput(input, index) {
             // Only allow numbers
@@ -965,6 +953,33 @@
             } catch (err) { console.error('Delete all logs error:', err); }
         }
 
+        async function syncInstruments() {
+            const btn = document.getElementById('sync-btn');
+            const originalText = btn.innerHTML;
+            
+            if (!confirm('This will fetch the latest instrument list from Upstox and update the database. It may take a minute. Continue?')) return;
+            
+            try {
+                btn.innerHTML = '⌛';
+                btn.style.pointerEvents = 'none';
+                
+                const response = await fetch('/api/sync-instruments');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ Sync successful! Total instruments: ${result.total}`);
+                } else {
+                    alert(`❌ Sync failed: ${result.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                console.error('Sync error:', err);
+                alert('❌ Connection error. Could not sync instruments.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.style.pointerEvents = 'auto';
+            }
+        }
+
         async function submitChangePin() {
             const currentPin = document.getElementById('current-pin-input').value;
             const newPin = document.getElementById('new-pin-input').value;
@@ -1061,8 +1076,30 @@
             }
         });
 
-        const BACKEND_URL = 'https://shiv-websocket.onrender.com';
+        let BACKEND_URL = '';
         const WEBHOOK_SECRET = 'shiv'; 
+
+        // Fetch config from frontend server
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                BACKEND_URL = config.BACKEND_URL;
+                console.log('✅ Config loaded, Backend:', BACKEND_URL);
+            } catch (err) {
+                console.error('❌ Failed to load config:', err);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchConfig();
+            setTimeout(() => {
+                if (typeof pinInputs !== 'undefined' && pinInputs[0]) {
+                    pinInputs[0].focus();
+                }
+            }, 100);
+        });
 
         function redirectToLogin() {
             const returnUrl = encodeURIComponent(window.location.origin);
@@ -1120,7 +1157,7 @@
             const query = document.getElementById('search-input').value;
             const list = document.getElementById('results-list');
             
-            if (query.length < 2) {
+            if (!query) {
                 list.classList.add('hidden');
                 return;
             }
