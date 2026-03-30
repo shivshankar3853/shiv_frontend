@@ -748,6 +748,9 @@
         <h3>🔍 Asset Search</h3>
         
         <div class="search-box">
+            <select id="search-segment" style="padding: 14px 10px; border-radius: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); outline: none;">
+                <option value="ALL">Loading...</option>
+            </select>
             <input type="text" id="search-input" placeholder="RELIANCE, NIFTY..." oninput="searchInstruments()">
             <button class="reset-btn-inline" onclick="resetSearch()" title="Reset Search">🔄</button>
         </div>
@@ -767,8 +770,6 @@
                     <select id="payload-product">
                         <option value="D">Delivery (D)</option>
                         <option value="I">Intraday (I)</option>
-                        <option value="CO">Cover Order (CO)</option>
-                        <option value="OCO">Bracket Order (OCO)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -776,11 +777,21 @@
                     <input type="number" id="payload-quantity" value="1" min="1">
                 </div>
                 <div class="form-group">
+                    <label>Order Type</label>
+                    <select id="payload-order-type">
+                        <option value="MARKET">Market</option>
+                        <option value="LIMIT">Limit</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Price</label>
-                    <select id="payload-price">
-                        <option value="{{market}}">Market</option>
-                        <option value="{{close}}">Close</option>
-                        <option value="{{open}}">Open</option>
+                    <input type="text" id="payload-price" value="{{close}}" placeholder="{{close}} or 100">
+                </div>
+                <div class="form-group">
+                    <label>AMO Order</label>
+                    <select id="payload-amo">
+                        <option value="false">No (Normal)</option>
+                        <option value="true">Yes (AMO)</option>
                     </select>
                 </div>
                 <button class="show-btn" onclick="generateJSON()">Show JSON Payload</button>
@@ -1091,9 +1102,33 @@
             }
         }
 
+        async function fetchSegments() {
+            try {
+                const response = await fetch('/api/segments');
+                const segments = await response.json();
+                const select = document.getElementById('search-segment');
+                select.innerHTML = '<option value="ALL">All Segments</option>';
+                
+                if (Array.isArray(segments)) {
+                    segments.forEach(seg => {
+                        const option = document.createElement('option');
+                        option.value = seg;
+                        option.textContent = seg.replace('_', ' ');
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('❌ Segments is not an array:', segments);
+                }
+            } catch (err) {
+                console.error('❌ Failed to fetch segments:', err);
+                document.getElementById('search-segment').innerHTML = '<option value="ALL">All Segments</option>';
+            }
+        }
+
         // Initialize on load
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchConfig();
+            await fetchSegments();
             setTimeout(() => {
                 if (typeof pinInputs !== 'undefined' && pinInputs[0]) {
                     pinInputs[0].focus();
@@ -1155,6 +1190,7 @@
 
         async function searchInstruments() {
             const query = document.getElementById('search-input').value;
+            const segment = document.getElementById('search-segment').value;
             const list = document.getElementById('results-list');
             
             if (!query) {
@@ -1165,14 +1201,14 @@
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 try {
-                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&segment=${segment}`);
                     const results = await response.json();
                     
                     list.innerHTML = '';
                     if (results.length > 0) {
                         results.forEach(inst => {
                             const li = document.createElement('li');
-                            const detailStr = `${inst.exchange} | ${inst.instrument_type} ${inst.expiry ? '| ' + inst.expiry : ''}`;
+                            const detailStr = `${inst.exchange} | ${inst.segment} ${inst.expiry ? '| ' + inst.expiry : ''}`;
                             li.innerHTML = `
                                 <div>
                                     <span class="symbol">${inst.trading_symbol}</span>
@@ -1199,6 +1235,14 @@
             
             selectedInstrument = inst;
             
+            // Auto-adjust product for F&O
+            const productSelect = document.getElementById('payload-product');
+            if (inst.segment === 'NSE_FO') {
+                productSelect.value = 'I'; // Default to Intraday for F&O
+            } else {
+                productSelect.value = 'D'; // Default to Delivery for Equity
+            }
+
             // Scroll to config form
             document.getElementById('payload-config').scrollIntoView({ behavior: 'smooth' });
         }
@@ -1213,15 +1257,36 @@
             const product = document.getElementById('payload-product').value;
             const quantity = parseInt(document.getElementById('payload-quantity').value) || 1;
             const price = document.getElementById('payload-price').value;
+            const orderType = document.getElementById('payload-order-type').value;
+            const isAmo = document.getElementById('payload-amo').value === 'true';
 
+            // Base JSON
             const json = {
                 "token": WEBHOOK_SECRET,
                 "symbol": `${selectedInstrument.exchange}:${selectedInstrument.trading_symbol}`,
                 "action": action,
                 "product": product,
-                "quantity": quantity,
-                "price": price
+                "quantity": quantity
             };
+
+            // Add instrument_token for F&O
+            if (selectedInstrument.segment === 'NSE_FO') {
+                json.instrument_token = selectedInstrument.instrument_key;
+            }
+
+            // Handle price/order_type
+            if (orderType === 'LIMIT') {
+                json.order_type = 'LIMIT';
+                json.price = isNaN(price) ? price : parseFloat(price);
+            } else {
+                json.order_type = 'MARKET';
+                json.price = 0;
+            }
+
+            // Handle AMO
+            if (isAmo) {
+                json.is_amo = true;
+            }
 
             const output = document.getElementById('json-output');
             output.innerHTML = `<button class="copy-btn" onclick="copyToClipboard()">Copy</button>` + JSON.stringify(json, null, 4);
